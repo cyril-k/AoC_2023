@@ -8,20 +8,20 @@ fn main () {
 
 fn part2(input: &str) -> String {
     
-    let mut digit_str  = (0..9)
+    let mut digit_str  = (0..10)
         .map(|val| val.to_string())
         .collect::<Vec<String>>();
-    let mut nums_str = ["one", "two", "three", "four", "five", "six", "seven", "ight", "nine"]
+    let mut nums_str = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
         .iter()
         .map(|&s| s.into())
         .collect::<Vec<String>>();
     nums_str.append(&mut digit_str);
-
+    println!("patterns: {:?}", nums_str);
     let ac = AhoCorasick::new(nums_str.iter()).unwrap();
     let mut numbers = vec![];
     for (i, line) in input.lines().enumerate() {
         let mut matches = vec![];
-        for matched_pattern in ac.find_iter(line).map(|m| &nums_str[m.pattern().as_usize()]) {
+        for matched_pattern in ac.find_overlapping_iter(line).map(|m| &nums_str[m.pattern().as_usize()]) {
             let number_str = match matched_pattern.as_str() {
                 "zero" => Some("0"),
                 "one" => Some("1"),
@@ -31,7 +31,7 @@ fn part2(input: &str) -> String {
                 "five" => Some("5"),
                 "six" => Some("6"),
                 "seven" => Some("7"),
-                "ight" => Some("8"),
+                "eight" => Some("8"),
                 "nine" => Some("9"),
                 val => Some(val),
             };
@@ -43,10 +43,9 @@ fn part2(input: &str) -> String {
             "{}{}", 
             matches.first().unwrap(), 
             matches.last().unwrap()
-        ).parse::<i64>().ok();
-        numbers.push(number.unwrap());
+        ).parse::<i64>().unwrap();
+        numbers.push(number);
     }
-
     println!("numbers: {:?}", numbers);
     numbers.iter().sum::<i64>().to_string()
     // "output".to_string()

@@ -2,7 +2,7 @@ use anyhow::Result;
 
 fn main () {
     let input = include_str!("./part1.txt");
-    let output = part1(input);
+    let output = part2(input);
     println!("{output}")
 }
 
@@ -47,16 +47,15 @@ impl GameSet {
             true
         } else { false }
     }
+
+    fn calculate_power(&self) -> usize {
+        self.red * self.green * self.blue
+    }
 }
 
-fn part1(input: &str) -> String {
-    // the reference set
-    let ref_game_set = GameSet {
-        red: 12,
-        green: 13,
-        blue: 14,
-    };
-    let mut ids_sum: usize = 0;
+fn part2(input: &str) -> String {
+
+    let mut power_sum: usize = 0;
     // parse sets
     for (game_i, line) in input.lines().enumerate() {
         let sets = line
@@ -77,12 +76,10 @@ fn part1(input: &str) -> String {
             }
         }
         println!("game {} : {:?}", game_i+1, game_set);
-        if game_set.validate(&ref_game_set) {
-            ids_sum += game_i+1;
-        }
+        power_sum += game_set.calculate_power();
     }
     // "output".to_string()
-    ids_sum.to_string()
+    power_sum.to_string()
 }
 
 fn parse_from_splits(splits: &Vec<&str>) -> Result<usize> {

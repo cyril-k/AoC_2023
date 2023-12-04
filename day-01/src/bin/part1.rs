@@ -15,8 +15,8 @@ fn part1(input: &str) -> String {
             "{}{}", 
             matches.first().unwrap(), 
             matches.last().unwrap()
-        ).parse::<i64>().ok();
-        numbers.push(number.unwrap());
+        ).parse::<i64>().unwrap();
+        numbers.push(number);
     }
 
     // println!("numbers: {:?}", numbers);
