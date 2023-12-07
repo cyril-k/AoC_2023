@@ -40,13 +40,6 @@ impl GameSet {
         }
     }
 
-    fn validate(&self, other: &GameSet) -> bool {
-        if self.red <= other.red 
-            && self.green <= other.green 
-            && self.blue <= other.blue {
-            true
-        } else { false }
-    }
 
     fn calculate_power(&self) -> usize {
         self.red * self.green * self.blue

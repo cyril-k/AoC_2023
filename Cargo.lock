@@ -60,6 +60,21 @@ name = "day-04"
 version = "0.1.0"
 
 [[package]]
+name = "day-05"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+]
+
+[[package]]
+name = "day-06"
+version = "0.1.0"
+
+[[package]]
+name = "day-07"
+version = "0.1.0"
+
+[[package]]
 name = "fancy-regex"
 version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
