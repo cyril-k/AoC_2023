@@ -19,7 +19,7 @@ fn part1(input: &str) -> String {
         .enumerate()
         .flat_map(|(y, line)| {
             line.chars().enumerate().map(move |(x, c)| {
-                let pointer = Pointer { x: Box::new(x), y: Box::new(y) };
+                let pointer = Pointer { x, y };
                 Tile::new(c, pointer)
             })
         })
@@ -80,7 +80,7 @@ impl Tile {
     fn is_connected_to(&self, other: &Tile) -> bool {
         // Calculate the difference in coordinates between two tiles
         let (self_pos, other_pos) = (&self.pointer, &other.pointer);
-        let (dx, dy) = ((*other_pos.x as isize) - (*self_pos.x as isize), (*other_pos.y as isize) - (*self_pos.y as isize));
+        let (dx, dy) = ((other_pos.x as isize) - (self_pos.x as isize), (other_pos.y as isize) - (self_pos.y as isize));
         match dx {
             -1 => {
                 // self to the right of other
@@ -109,17 +109,17 @@ impl Tile {
 
 #[derive(Eq, PartialEq, Hash, Debug)]
 struct Pointer {
-    x: Box<usize>, // does it actually use less space on the stack than plain value?
-    y: Box<usize>,
+    x: usize, // does it actually use less space on the stack than plain value?
+    y: usize,
 }
 
 impl Pointer {
     fn from_index(index: (usize, usize)) -> Self {
-        Self { x: Box::new(index.1), y: Box::new(index.0) }
+        Self { x: index.1, y: index.0 }
     }
 
     fn to_index(&self) -> (usize, usize) {
-        (*self.y, *self.x)
+        (self.y, self.x)
     }
 
     fn advance(&self) -> Vec<Pointer> {
