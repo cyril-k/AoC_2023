@@ -109,7 +109,7 @@ impl Tile {
 
 #[derive(Eq, PartialEq, Hash, Debug)]
 struct Pointer {
-    x: usize, // does it actually use less space on the stack than plain value?
+    x: usize, 
     y: usize,
 }
 
