@@ -157,6 +157,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "day-17"
+version = "0.1.0"
+dependencies = [
+ "ndarray",
+]
+
+[[package]]
+name = "day-18"
+version = "0.1.0"
+
+[[package]]
+name = "day-19"
+version = "0.1.0"
+dependencies = [
+ "regex",
+]
+
+[[package]]
 name = "fancy-regex"
 version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
