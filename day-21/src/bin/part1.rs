@@ -72,6 +72,8 @@ fn bfs_search(start: Node, target_step: usize, maze: &Array2<char>) -> usize {
         for neighbor_pos in get_neighbors(&current.position, maze) {
                 queue.push_back((Node::new(neighbor_pos), step + 1));
         }
+
+        println!("queue size: {:?}", queue.len());
     }
 
     let mut viz_maze = maze.clone();
