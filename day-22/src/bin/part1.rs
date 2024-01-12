@@ -12,11 +12,11 @@ fn part1(input: &str) -> String {
     for line in input.lines() {
         blocks.push(Block::new(line));
     }
-
-    println!("initial blocks{:?}", blocks);
     settle(&mut blocks);
-    println!("settled blocks{:?}", blocks);
-    "output".to_string()
+    let unstable_blocks = check_stability(&mut blocks);
+    (blocks.len() - unstable_blocks.len()).to_string()
+
+    //"output".to_string()
 }
 
 fn settle(blocks: &mut Vec<Block>) -> HashMap<(usize, usize, usize), bool> {
@@ -50,7 +50,6 @@ fn settle(blocks: &mut Vec<Block>) -> HashMap<(usize, usize, usize), bool> {
             }
         }
 
-        // Mark the occupied positions in the grid
         for x in min(x1, x2)..=max(x1, x2) {
             for y in min(y1, y2)..=max(y1, y2) {
                 for z in z1..=z2 {
@@ -63,37 +62,7 @@ fn settle(blocks: &mut Vec<Block>) -> HashMap<(usize, usize, usize), bool> {
         block.vertex_a.2 = z1;
         block.vertex_b.2 = z2;
     }
-
-    // let mut breakable = 0;
-    // for block in &mut *blocks {
-    //     if can_break(&grid, block) {
-    //         breakable += 1;
-    //     }
-    // }
-
-    // println!("can break {}", breakable);
     grid
-}
-
-fn can_break(grid: &HashMap<(usize, usize, usize), bool>, block: &Block) -> bool {
-    let (x1, y1, z1) = (block.vertex_a.0, block.vertex_a.1, block.vertex_a.2);
-    let (x2, y2, z2) = (block.vertex_b.0, block.vertex_b.1, block.vertex_b.2);
-    let (z1, z2) = (min(z1, z2), max(z1, z2));
-
-    let mut neighbor = Vec::new();
-
-    for x in min(x1, x2)..=max(x1, x2) {
-        for y in min(y1, y2)..=max(y1, y2) {
-            if *grid.get(&(x, y, z2+1)).unwrap_or(&false) {
-                neighbor.push(false);
-            } else {
-                neighbor.push(true);
-            }
-        }
-    }
-
-    println!("this neighbor {:?}", neighbor);
-    neighbor.iter().all(|x| *x)
 }
 
 fn check_stability(blocks: &mut Vec<Block>) -> Vec<usize> {
@@ -104,8 +73,12 @@ fn check_stability(blocks: &mut Vec<Block>) -> Vec<usize> {
         let mut temp_blocks = blocks.clone();
         temp_blocks.remove(i); 
         let new_grid = settle(&mut temp_blocks);
-
-        if new_grid != original_grid {
+        let mut original_grid_minus = original_grid.clone();
+        for unit in block.to_units() {
+            original_grid_minus.remove(&unit);
+        }
+        
+        if new_grid != original_grid_minus {
             unstable_bricks.push(i);
         }
     }
@@ -137,6 +110,24 @@ impl Block {
             vertex_a: Vertex::from_str(vertices[0]), 
             vertex_b: Vertex::from_str(vertices[1]),
         }
+    }
+
+    fn to_units(&self) -> Vec<(usize, usize,usize)> {
+        let (x1, y1, z1) = (self.vertex_a.0, self.vertex_a.1, self.vertex_a.2);
+        let (x2, y2, z2) = (self.vertex_b.0, self.vertex_b.1, self.vertex_b.2);
+        let (z1, z2) = (min(z1, z2), max(z1, z2));
+
+        let mut units = Vec::new();
+
+        for x in min(x1, x2)..=max(x1, x2) {
+            for y in min(y1, y2)..=max(y1, y2) {
+                for z in z1..=z2 {
+                    units.push((x, y, z));
+                }
+            }
+        }
+
+        units
     }
 }
 
