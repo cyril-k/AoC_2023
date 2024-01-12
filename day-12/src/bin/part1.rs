@@ -6,59 +6,79 @@ fn main () {
 }
 
 fn part1(input: &str) -> String {
-    for line in input.lines() {
-        let splits = line.split(' ').collect::<Vec<&str>>();
+    let mut sum = 0;
 
-        let (corrupted_s, groups) = match splits.as_slice() {
-            &[first, second, ..] => (first, second),
-            _ => unreachable!(),
-        };
+    input
+        .lines()
+        .for_each(|line| sum += count_arrangements(line));
 
-        let groups = groups
-            .split(',')
-            .filter_map(|c| c.parse::<usize>().ok())
-            .collect::<Vec<usize>>();
-
-        println!("corrupted_string {}", corrupted_s);
-        println!("groups {:?}", groups);
-
-        // for (i, group) in groups 
-
-    }
-    // let lines: Vec<&str> = input.lines().collect();
-    // let rows = lines.len();
-    // let cols = lines[0].chars().count();
-
-    // let sky_array = lines
-    //     .iter()
-    //     .enumerate()
-    //     .flat_map(|(y, line)| {
-    //         line.chars().enumerate().map(move |(x, c)| {
-    //             new_pixel(c)
-    //         })
-    //     })
-    //     .collect::<Vec<usize>>();
-
-    // let sky_array = Array2::from_shape_vec((rows, cols), sky_array)
-    //     .expect("Failed to reshape into Array2");
-
-    // let sky = Sky::new(sky_array);
-
-    "output".to_string()
+    sum.to_string()
 
 }
 
-// struct BrokenSeq {
-//     corrupted: String,
-//     groups: Vec<usize>,
-// }
+fn count_arrangements(line: &str) -> usize {
+    let splits: Vec<&str> = line.split(' ').collect();
+    let string_sequence = splits[0];
+    let corrupted_groups: Vec<usize> = splits[1]
+        .split(',')
+        .map(|s| s.parse().unwrap())
+        .collect();
 
-// impl BrokenSeq {
-//     fn find_combinations(&self) {
-//         let mut something: Vec<usize> = vec![];
-//         for (i, group) in self.groups {
-//             // groups = [3,1,1]
-//             0..x + x..x+3 + x+3+y..x+3+y+1
-//         }
-//     }
-// }
+    make_arrangements(string_sequence, 0, &corrupted_groups).len()
+}
+
+fn is_valid(arrangement: &str, corrupted_groups: &[usize]) -> bool {
+    let mut count = 0;
+    let mut groups = Vec::new();
+    
+    for spring in arrangement.chars() {
+        if spring == '#' {
+            count += 1;
+        } else if count > 0 {
+            groups.push(count);
+            count = 0;
+        }
+    }
+    
+    if count > 0 {
+        groups.push(count);
+    }
+    
+    groups == corrupted_groups
+}
+
+fn make_arrangements(
+    sequence: &str,
+    index: usize,
+    corrupted_groups: &[usize],
+    ) -> Vec<String> {
+    
+    if index >= sequence.len() {
+        return if is_valid(sequence, corrupted_groups) {
+            vec![sequence.to_string()]
+        } else {
+            vec![]
+        };
+    }
+
+    let mut arrangements = Vec::new();
+    let mut chars: Vec<char> = sequence.chars().collect();
+    
+    if chars[index] == '?' {
+        chars[index] = '.';
+        arrangements.append(&mut make_arrangements(
+            &chars.iter().collect::<String>(),
+            index + 1,
+            corrupted_groups,
+        ));
+        chars[index] = '#';
+        arrangements.append(&mut make_arrangements(
+            &chars.iter().collect::<String>(),
+            index + 1,
+            corrupted_groups,
+        ));
+    } else {
+        arrangements.append(&mut make_arrangements(sequence, index + 1, corrupted_groups));
+    }
+    arrangements
+}
