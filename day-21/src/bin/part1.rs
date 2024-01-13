@@ -1,4 +1,4 @@
-use std::collections::{HashSet, VecDeque};
+use std::collections::HashSet;
 use ndarray::{self, Array2};
 
 
@@ -20,68 +20,38 @@ fn part1(input: &str) -> String {
             .unwrap()
     });
 
-    // println!("{:?}", maze_array);
     let start = maze_array.indexed_iter().find_map(|(index, c)| {
         if *c == 'S' {
-            Some(Node::new(index))
+            Some(index)
         } else { None }
     }).unwrap();
 
-    let res = bfs_search(start, 64, &maze_array);
-    println!("{:?}", res);
+    (find_positions(&maze_array, start, 64).len() + 1).to_string() // add starting pos
 
-    "output".to_string()
+    // "output".to_string()
 }
 
-#[derive(Eq, PartialEq, Debug, Clone, Hash)]
-struct Node {
-    position: (usize, usize)
-}
+fn find_positions(array:&Array2<char>, start: (usize, usize), target_step: usize) -> HashSet<(usize, usize)> {
+    let mut positions = HashSet::new();
+    let directions: [(isize, isize); 4] = [(-1, 0), (1, 0), (0, -1), (0, 1)]; // u, d, l, r
 
-impl Node {
-    fn new(position: (usize, usize)) -> Self {
-        Node { position }
-    }
-}
+    positions.insert(start);
 
-fn get_neighbors(position: &(usize, usize), maze: &Array2<char>) -> Vec<(usize, usize)> {
-    let directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]; // r, d, l, u
-    directions.iter().filter_map(|&(dx, dy)| {
-        let new_pos = ((position.0 as isize + dx) as usize, (position.1 as isize + dy) as usize);
-        maze.get(new_pos).and_then(|&cell| {
-            if cell == '.' || cell == 'S' { Some(new_pos) } else { None }
-        })
-    }).collect()
-}
+    for _ in 0..target_step  {
+        let mut new_positions = HashSet::new();
+        for position in positions {
+            for (dy, dx) in directions.iter() {
+                let new_position = (
+                    position.0.wrapping_add_signed(*dy), 
+                    position.1.wrapping_add_signed(*dx)
+                );
 
-fn bfs_search(start: Node, target_step: usize, maze: &Array2<char>) -> usize {
-    let mut queue = VecDeque::new();
-    queue.push_back((start, 0));
-
-    let mut current_tracker = HashSet::new();
-
-    while let Some((current, step)) = queue.pop_front() {
-
-        if step == target_step {
-            current_tracker.insert(current);
-            continue;
-        } else if step > target_step {
-            break;
+                if array.get(new_position).map_or(false, |&tile| tile == '.') {
+                    new_positions.insert(new_position);
+                }
+            }
         }
-
-        for neighbor_pos in get_neighbors(&current.position, maze) {
-                queue.push_back((Node::new(neighbor_pos), step + 1));
-        }
-
-        println!("queue size: {:?}", queue.len());
+        positions = new_positions;
     }
-
-    let mut viz_maze = maze.clone();
-
-    for node in current_tracker.iter() {
-        *viz_maze.get_mut(node.position).unwrap() = 'O';
-    }
-    println!("viz_maze:\n {}", viz_maze);
-
-    current_tracker.len()
+    positions
 }
