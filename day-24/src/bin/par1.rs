@@ -1,5 +1,6 @@
-use std::cmp::{min, max};
+use std::cmp::{min, max, Ordering};
 use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
 
 fn main () {
     let input = include_str!("./part1.txt");
@@ -8,7 +9,7 @@ fn main () {
 }
 
 fn part1(input: &str) -> String {
-    // let mut projectiles = Vec::new();
+    let mut intersections = Vec::new();
 
     for line in input.lines() {
         let splits = line.split(" @ ").collect::<Vec<&str>>();
@@ -18,48 +19,85 @@ fn part1(input: &str) -> String {
         let deltas = splits[1].split(", ").map(|s| s.trim().parse().unwrap()).collect::<Vec<f64>>();
         let (dx, dy) = (deltas[0], deltas[1]);
 
-        // projectiles.push((x0, dx, y0, dy));
-
         let args = to_linear((x0, dx, y0, dy));
+        
+        //let limits = (200000000000000.0, 400000000000000.0);
+        let limits = (7.0, 27.0);
+        
+        println!("intersections: {:?}", line_rectangle_intersection(limits.0, limits.1, args.0, args.1, x0, y0));
+        intersections.push(line_rectangle_intersection(limits.0, limits.1, args.0, args.1, x0, y0));
+    }
 
-        println!("args: {:?}", args);
+    let mut counter = 0;
+
+    for (i, int1) in intersections.iter().enumerate() {
+        for int2 in intersections[i..].iter() {
+            if they_intersect(int1, int2) {
+                counter += 1;
+            }
+        }
+
     }
 
     // println!("{:?}", projectiles);
-    "output".to_string()
+    //"output".to_string()
+    counter.to_string()
 }
 
-struct Projectile {
-    x0: f64,
-    y0: f64,
-    k: f64,
-    b: f64,
+fn they_intersect(
+    p1: &Vec<(BadFloat, BadFloat)>, 
+    p2: &Vec<(BadFloat, BadFloat)>, 
+) -> bool {
+    let (e1, x1) = (p1[0], p1[1]);
+    let (e2, x2) = (p2[0], p2[1]);
+    if e1.0 == x1.0 || e2.0 == x2.0 {
+        return false
+    }
+    
+    let horizontal_overlap = (min(e1.0, x1.0) < max(e2.0, x2.0)) &&
+                             (min(e2.0, x2.0) < max(e1.0, x1.0));
+
+    let vertical_overlap = (min(e1.1, x1.1) < max(e2.1, x2.1)) &&
+                             (min(e2.1, x2.1) < max(e1.1, x1.1));
+
+    horizontal_overlap && vertical_overlap
 }
 
-impl Projectile {
-    fn new(x0: f64, dx: f64, y0: f64, dy: f64) -> Self {
-        Self { 
-            x0, 
-            y0, 
-            k: dy/dx, 
-            b: y0 - (dy/dx) * x0 
+
+#[derive(Clone, Copy, Debug)]
+struct BadFloat(f64);
+
+impl PartialEq for BadFloat {
+    fn eq(&self, other: &Self) -> bool {
+        (self.0 - other.0).abs() < 1e-6
+    }
+}
+
+impl Eq for BadFloat {}
+
+impl Hash for BadFloat {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        ((self.0 * 1e6 as f64).round() as i64).hash(state);
+    }
+}
+
+impl PartialOrd for BadFloat {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        if self.eq(other) {
+            Some(Ordering::Equal)
+        } else if self.0 < other.0 {
+            Some(Ordering::Less)
+        } else {
+            Some(Ordering::Greater)
         }
     }
 }
 
-
-fn they_intersect(
-    p1: (f64, f64, f64, f64), 
-    p2: (f64, f64, f64, f64), 
-    limits: (f64, f64)
-) -> bool {
-    
-    // find if the origin is less, inside, or greater than limit
-    
-    
-    false
+impl Ord for BadFloat {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.partial_cmp(other).unwrap()
+    }
 }
-
 
 fn to_linear(p: (f64, f64, f64, f64)) -> (f64, f64) {
     let k = p.3 / p.1;
@@ -69,40 +107,36 @@ fn to_linear(p: (f64, f64, f64, f64)) -> (f64, f64) {
 }
 
 fn line_rectangle_intersection(
-    min_lim: (f64, f64),
-    max_lim: (f64, f64),
+    min_lim: f64,
+    max_lim: f64,
     k: f64,
     b: f64,
     x0: f64,
     y0: f64,
-) -> HashSet<(f64, f64)> {
-    let mut intersections = HashSet::new();
+) -> Vec<(BadFloat, BadFloat)> {
+    let mut intersections = Vec::new();
 
-    let (x1, y1) = min_lim;
-    let (x2, y2) = max_lim;
+    let (x1, y1) = (min_lim, min_lim);
+    let (x2, y2) = (max_lim, max_lim);
 
-    // Check intersection with the top side of the rectangle
     let top_intersection_x = (y1 - b) / k;
     if top_intersection_x >= x1 && top_intersection_x <= x2 {
-        intersections.insert((top_intersection_x, y1));
+        intersections.push((BadFloat(top_intersection_x), BadFloat(y1)));
     }
 
-    // Check intersection with the bottom side of the rectangle
     let bottom_intersection_x = (y2 - b) / k;
     if bottom_intersection_x >= x1 && bottom_intersection_x <= x2 {
-        intersections.insert((bottom_intersection_x, y2));
+        intersections.push((BadFloat(bottom_intersection_x), BadFloat(y2)));
     }
 
-    // Check intersection with the left side of the rectangle
     let left_intersection_y = k * x1 + b;
     if left_intersection_y >= y1 && left_intersection_y <= y2 {
-        intersections.insert((x1, left_intersection_y));
+        intersections.push((BadFloat(x1), BadFloat(left_intersection_y)));
     }
 
-    // Check intersection with the right side of the rectangle
     let right_intersection_y = k * x2 + b;
     if right_intersection_y >= y1 && right_intersection_y <= y2 {
-        intersections.insert((x2, right_intersection_y));
+        intersections.push((BadFloat(x2), BadFloat(right_intersection_y)));
     }
 
     intersections
