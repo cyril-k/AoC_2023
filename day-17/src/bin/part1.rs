@@ -1,8 +1,6 @@
 use std::collections::{HashMap, BinaryHeap};
 use ndarray::{self, Array2};
 use std::cmp::Ordering;
-use std::hash::{Hash, Hasher};
-
 use std::cmp::Reverse;
 
 fn main () {
@@ -28,16 +26,14 @@ fn part1(input: &str) -> String {
         
     let start = (0, 0);
     let goal = (array.nrows()-1, array.ncols()-1);
-    let cost = a_star(&array, start, goal, 3);
+    let cost = find_path(&array, start, goal, 3);
 
-    println!("{:?}", cost);
-
-    "output".to_string()
-    // sum.to_string()
+    // "output".to_string()
+    cost.to_string()
 
 }
 
-#[derive(Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Copy, Eq, PartialEq, Hash, Debug)]
 enum Direction {
     Up,
     Down,
@@ -46,7 +42,19 @@ enum Direction {
     None, 
 }
 
-#[derive(Clone, Copy, Eq, PartialEq)]
+impl Direction {
+    fn is_valid(&self, other: &Direction) -> bool {
+        match self {
+            Direction::Up if other == &Direction::Down => false,
+            Direction::Down if other == &Direction::Up => false,
+            Direction::Left if other == &Direction::Right => false,
+            Direction::Right if other == &Direction::Left => false,
+            _ => true,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Eq, PartialEq, Hash, Debug)]
 struct State {
     position: (usize, usize),
     direction: Direction,
@@ -77,14 +85,14 @@ fn neighbors(current: State, rows: usize, cols: usize, max_consecutive: usize) -
     ];
 
     for &(new_pos, new_dir) in &directions {
-        if new_pos.0 < rows && new_pos.1 < cols {
-            if new_dir != current.direction && current.consecutive < max_consecutive {
+        if new_pos.0 < rows && new_pos.1 < cols && new_dir.is_valid(&current.direction){
+            if new_dir != current.direction {
                 result.push(State {
                     position: new_pos,
                     direction: new_dir,
                     consecutive: 1,
                 });
-            } else if new_dir == current.direction {
+            } else if new_dir == current.direction && current.consecutive < max_consecutive {
                 result.push(State {
                     position: new_pos,
                     direction: new_dir,
@@ -97,68 +105,35 @@ fn neighbors(current: State, rows: usize, cols: usize, max_consecutive: usize) -
     result
 }
 
-fn manhattan_d(node: &(usize, usize), goal: &(usize, usize)) -> usize {
-    let dx = (node.0 as isize - goal.0 as isize).abs();
-    let dy = (node.1 as isize - goal.1 as isize).abs();
-    (dx + dy) as usize
-}
-
-fn a_star(array: &Array2<usize>, start: (usize, usize), goal: (usize, usize), max_consecutive: usize) -> usize {
-    let mut distances: HashMap<(usize, usize), usize> = HashMap::new();
-    let mut heap = BinaryHeap::new();
-    let mut came_from: HashMap<(usize, usize), (usize, usize)> = HashMap::new();
-
-    distances.insert(start, 0);
-
+fn find_path(array: &Array2<usize>, start: (usize, usize), goal: (usize, usize), max_consecutive: usize) -> usize {
+    let mut loss: HashMap<State, usize> = HashMap::new();
+    let mut heap: BinaryHeap<Reverse<(usize, State)>> = BinaryHeap::new();
+    
     let start_state = State {
         position: start,
         direction: Direction::None,
         consecutive: 0,
     };
-
-    heap.push(Reverse((0 + manhattan_d(&start, &goal), start_state)));
     
-    while let Some(Reverse((_, current))) = heap.pop() {
-        if current.position == goal {
-            break;
+    loss.insert(start_state, 0);
+    heap.push(Reverse((0, start_state)));
+    
+    while let Some(Reverse((current_cost, current_state))) = heap.pop() {
+        if current_state.position == goal {
+            return current_cost;
         }
-
-        for neighbor in neighbors(current, array.nrows(), array.ncols(), max_consecutive) {
-            let next_cost = distances[&current.position] + array.get(neighbor.position).unwrap();
-
-            if next_cost < *distances.entry(neighbor.position).or_insert(usize::MAX) {
-                distances.insert(neighbor.position, next_cost);
-                came_from.insert(neighbor.position, current.position);
-                let total_cost = next_cost + manhattan_d(&neighbor.position, &goal);
-                heap.push(Reverse((total_cost, neighbor)));
+        
+        if current_cost > *loss.get(&current_state).unwrap_or(&usize::MAX) {
+            continue;
+        }
+        
+        for neighbor in neighbors(current_state, array.nrows(), array.ncols(), max_consecutive) {
+            let next_cost = current_cost + array.get(neighbor.position).unwrap();
+            if next_cost < *loss.get(&neighbor).unwrap_or(&usize::MAX) {
+                loss.insert(neighbor, next_cost);
+                heap.push(Reverse((next_cost, neighbor)));
             }
         }
-
-        
     }
-    println!("distances {:?}", distances);
-    // distances
-    calculate_total_cost(array, &distances, &came_from, start, goal)
-}
-
-fn calculate_total_cost(
-    array: &Array2<usize>,
-    distances: &HashMap<(usize, usize), usize>,
-    came_from: &HashMap<(usize, usize), (usize, usize)>,
-    start: (usize, usize),
-    goal: (usize, usize),
-) -> usize {
-    let mut total_cost = 0;
-    let mut current = goal;
-    println!("goal {:?}", goal);
-    while let Some(&previous) = came_from.get(&current) {
-        total_cost += array.get(current).unwrap_or(&0);
-        // println!("total_cost {}", total_cost);
-        if previous == start {
-            break;
-        }
-        current = previous;
-    }
-
-    total_cost - array.get(start).unwrap()
+    usize::MAX
 }
